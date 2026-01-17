@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -140,29 +140,58 @@ async def get_filament_types():
 @app.post("/slice", response_model=SliceResponse)
 async def slice_model(
     file: UploadFile = File(...),
-    layer_height: float = 0.2,
-    infill_density: int = 15,
-    wall_count: int = 2,
-    filament_type: str = "PLA",
-    filament_density: Optional[float] = None
+    layer_height: float = Form(...),
+    infill_density: int = Form(...),
+    wall_count: int = Form(...),
+    filament_type: str = Form("PLA"),
+    filament_density: Optional[float] = Form(None)
 ):
     """
     Slice a 3D model and return print statistics
     
     Args:
-        file: 3D model file (STL or 3MF)
-        layer_height: Layer height in mm (0.1 - 0.4)
-        infill_density: Infill percentage (0 - 100)
-        wall_count: Number of perimeter walls (1 - 10)
-        filament_type: Filament type (PLA, PETG, ABS, etc.)
+        file: 3D model file (STL or 3MF) - REQUIRED
+        layer_height: Layer height in mm - REQUIRED
+        infill_density: Infill percentage (0 - 100) - REQUIRED
+        wall_count: Number of perimeter walls (1 - 20) - REQUIRED
+        filament_type: Filament type (defaults to PLA if not provided)
         filament_density: Custom filament density in g/cm³ (overrides filament_type)
         
     Returns:
         SliceResponse with print statistics
     """
     # Validate file extension
-    if not file.filename.lower().endswith(('.stl', '.3mf')):
+    if not file.filename or not file.filename.lower().endswith(('.stl', '.3mf')):
         raise HTTPException(status_code=400, detail="Only STL and 3MF files are supported")
+    
+    # Validate required parameters
+    if layer_height is None:
+        raise HTTPException(status_code=400, detail="layer_height is required")
+    
+    if infill_density is None:
+        raise HTTPException(status_code=400, detail="infill_density is required")
+    
+    if wall_count is None:
+        raise HTTPException(status_code=400, detail="wall_count is required")
+    
+    # Validate parameter ranges
+    if layer_height < 0.01 or layer_height > 1.0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"layer_height must be between 0.01 and 1.0 mm, got {layer_height}"
+        )
+    
+    if infill_density < 0 or infill_density > 100:
+        raise HTTPException(
+            status_code=400,
+            detail=f"infill_density must be between 0 and 100, got {infill_density}"
+        )
+    
+    if wall_count < 1 or wall_count > 20:
+        raise HTTPException(
+            status_code=400,
+            detail=f"wall_count must be between 1 and 20, got {wall_count}"
+        )
     
     # Determine filament density
     if filament_density is None:
