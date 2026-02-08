@@ -1,10 +1,23 @@
 version: '3.8'
 
 services:
-  backend:
+  superslice:
     build:
       context: .
       dockerfile: Dockerfile
+    image: superslice:latest
     container_name: superslice
     ports:
       - "8000:8000"
+    environment:
+      - SLICE_TIMEOUT=120
+      - MAX_FILE_SIZE=104857600
+      - CORS_ORIGINS=*
+    volumes:
+      - uploads:/app/uploads
+      - output:/app/output
+    restart: unless-stopped
+
+volumes:
+  uploads:
+  output:
