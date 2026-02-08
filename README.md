@@ -1,5 +1,9 @@
 # SuperSlice
 
+[![Docker Build](https://github.com/bintangtimurlangit/superslice/actions/workflows/docker-build.yml/badge.svg)](https://github.com/bintangtimurlangit/superslice/actions/workflows/docker-build.yml)
+[![GitHub release](https://img.shields.io/github/v/release/bintangtimurlangit/superslice)](https://github.com/bintangtimurlangit/superslice/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A REST API service for 3D print estimation using PrusaSlicer. Upload STL or 3MF files and receive detailed print statistics including time, filament usage, and material weight.
 
 ## Features
@@ -48,9 +52,43 @@ To modify the predefined filament types, edit the `FILAMENT_DENSITIES` dictionar
 ### Prerequisites
 
 - Docker
-- Docker Compose
+- Docker Compose (optional, for easier setup)
 
-### Installation
+### Option 1: Use Pre-built Image (Recommended)
+
+Pull and run the latest pre-built image from GitHub Container Registry:
+
+```bash
+docker run -d \
+  --name superslice \
+  -p 8000:8000 \
+  ghcr.io/bintangtimurlangit/superslice:latest
+```
+
+Or use a specific version:
+
+```bash
+docker run -d \
+  --name superslice \
+  -p 8000:8000 \
+  ghcr.io/bintangtimurlangit/superslice:1.0.0
+```
+
+Using docker-compose with pre-built image:
+
+```yaml
+version: "3.8"
+
+services:
+  superslice:
+    image: ghcr.io/bintangtimurlangit/superslice:latest
+    container_name: superslice
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+```
+
+### Option 2: Build from Source
 
 1. Clone the repository:
 
