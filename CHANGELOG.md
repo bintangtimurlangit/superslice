@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-21
+
 ### Changed
 
 - **Self-owned Docker image.** Replaced the third-party
@@ -67,4 +69,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic file cleanup after processing
 - CORS middleware support
 
+[Unreleased]: https://github.com/bintangtimurlangit/superslice/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/bintangtimurlangit/superslice/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/bintangtimurlangit/superslice/releases/tag/v1.0.0
