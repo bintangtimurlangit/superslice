@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Build-plate fit**: every `/slice` response now includes
+  `model_dimensions_mm`, `build_volume_mm`, and `fits_build_volume`. The build
+  volume defaults to 256×256×256 (`BUILD_VOLUME_X/Y/Z`) and can be overridden
+  per request. Over-sized models are **flagged, not rejected** — they slice on
+  an enlarged bed and still return estimates instead of a 500.
+- **`requires_supports`** flag, detected from a support-enabled slice
+  (`check_supports`, on by default; set `false` to skip the extra slice).
 - Postman collection (`docs/superslice.postman_collection.json`) covering every
   endpoint.
 - A Mermaid "How it works" diagram and a "Why PrusaSlicer 2.8.1?" note in the

@@ -102,9 +102,10 @@ Planned next (not built yet):
 
 - **Printer & filament presets** — pick a bundled PrusaSlicer profile so
   estimates track a specific machine. This is the main accuracy lever.
-- **Richer output** — build-plate-fit and "needs supports" flags plus a model
-  bounding box in the response (depends on presets for bed size).
 - **Energy estimate** — optional wattage from a printer preset.
+
+Already shipped: build-plate fit (`fits_build_volume`, default 256×256×256),
+`requires_supports`, and the model bounding box are in every `/slice` response.
 
 Out of scope by design: pricing, orders, and any UI. Those are built by the app
 that calls SuperSlice (for example a 3D-printing website), not by SuperSlice

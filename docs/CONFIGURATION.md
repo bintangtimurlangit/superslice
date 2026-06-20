@@ -12,6 +12,17 @@ have sensible defaults; the service runs with zero configuration.
 | `MAX_FILE_SIZE` | `104857600` | Max upload size in bytes (100 MB) before a `413`. |
 | `CORS_ORIGINS` | `*` | Comma-separated allowed origins. |
 
+### Build volume
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `BUILD_VOLUME_X` | `256` | Build plate width (mm). Larger models are flagged, not rejected. |
+| `BUILD_VOLUME_Y` | `256` | Build plate depth (mm). |
+| `BUILD_VOLUME_Z` | `256` | Max print height (mm). |
+| `BED_MARGIN_MM` | `10` | Extra bed margin so an over-sized model still slices instead of erroring. |
+
+Per-request overrides are accepted via the `build_volume_x/y/z` form fields.
+
 ### Protection (all opt-in, disabled by default)
 
 | Variable | Default | Description |
