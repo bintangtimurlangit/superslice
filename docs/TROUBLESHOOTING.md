@@ -6,7 +6,7 @@
 The pinned PrusaSlicer AppImage failed verification — usually a corrupted or
 partial download, or the URL/SHA in the Dockerfile drifted. Re-run the build; if
 it persists, confirm the `PRUSASLICER_URL` and `PRUSASLICER_SHA256` build args
-match a real release asset (see [SLICER.md](SLICER.md)).
+match a real release asset.
 
 **`--appimage-extract` does nothing / empty `squashfs-root`**
 The AppImage must be executable. The Dockerfile `chmod +x` handles this; if you

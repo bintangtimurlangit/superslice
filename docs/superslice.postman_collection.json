@@ -1,0 +1,113 @@
+{
+  "info": {
+    "name": "SuperSlice API",
+    "description": "3D print estimation API. Set the `baseUrl` and (if auth is enabled) `apiKey` collection variables. For /slice and /jobs, attach an STL/3MF file to the `file` form field.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "apiKey", "value": "" },
+    { "key": "jobId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health / info",
+      "item": [
+        {
+          "name": "Service info",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/", "host": ["{{baseUrl}}"], "path": [""] }
+          }
+        },
+        {
+          "name": "Liveness",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/healthz", "host": ["{{baseUrl}}"], "path": ["healthz"] }
+          }
+        },
+        {
+          "name": "Version",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/version", "host": ["{{baseUrl}}"], "path": ["version"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filament types",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/filament-types", "host": ["{{baseUrl}}"], "path": ["filament-types"] }
+      }
+    },
+    {
+      "name": "Slice (sync)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-API-Key", "value": "{{apiKey}}" }],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "file", "type": "file", "src": [] },
+            { "key": "layer_height", "value": "0.2", "type": "text" },
+            { "key": "infill_density", "value": "20", "type": "text" },
+            { "key": "wall_count", "value": "3", "type": "text" },
+            { "key": "filament_type", "value": "PLA", "type": "text" }
+          ]
+        },
+        "url": { "raw": "{{baseUrl}}/slice", "host": ["{{baseUrl}}"], "path": ["slice"] }
+      }
+    },
+    {
+      "name": "Slice (async job)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-API-Key", "value": "{{apiKey}}" }],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "file", "type": "file", "src": [] },
+            { "key": "layer_height", "value": "0.2", "type": "text" },
+            { "key": "infill_density", "value": "20", "type": "text" },
+            { "key": "wall_count", "value": "3", "type": "text" },
+            { "key": "filament_type", "value": "PLA", "type": "text" }
+          ]
+        },
+        "url": { "raw": "{{baseUrl}}/jobs", "host": ["{{baseUrl}}"], "path": ["jobs"] }
+      }
+    },
+    {
+      "name": "Get job status",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "X-API-Key", "value": "{{apiKey}}" }],
+        "url": { "raw": "{{baseUrl}}/jobs/{{jobId}}", "host": ["{{baseUrl}}"], "path": ["jobs", "{{jobId}}"] }
+      }
+    },
+    {
+      "name": "History (list)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/history?limit=50&offset=0",
+          "host": ["{{baseUrl}}"],
+          "path": ["history"],
+          "query": [
+            { "key": "limit", "value": "50" },
+            { "key": "offset", "value": "0" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "History (one record)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/history/1", "host": ["{{baseUrl}}"], "path": ["history", "1"] }
+      }
+    }
+  ]
+}

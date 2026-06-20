@@ -1,52 +1,8 @@
 # Deployment Guide
 
-This guide covers deploying SuperSlice in various environments.
-
-## GitHub Container Registry Setup
-
-The project is configured to automatically build and push Docker images to GitHub Container Registry (GHCR) when you push to the main branch or create a release tag.
-
-### First-Time Setup
-
-1. Push your code to GitHub:
-
-```bash
-git remote add origin https://github.com/bintangtimurlangit/superslice.git
-git branch -M main
-git push -u origin main
-```
-
-2. The GitHub Actions workflow will automatically build the Docker image
-
-3. The image will be available at: `ghcr.io/bintangtimurlangit/superslice:latest`
-
-### Creating a Release
-
-To create a versioned release:
-
-```bash
-# Create and push a tag
-git tag -a v1.0.0 -m "Release version 1.0.0"
-git push origin v1.0.0
-```
-
-This will trigger the workflow to build and push images with tags:
-
-- `ghcr.io/bintangtimurlangit/superslice:1.0.0`
-- `ghcr.io/bintangtimurlangit/superslice:1.0`
-- `ghcr.io/bintangtimurlangit/superslice:1`
-- `ghcr.io/bintangtimurlangit/superslice:latest`
-
-### Making Images Public
-
-By default, GHCR images are private. To make them public:
-
-1. Go to https://github.com/bintangtimurlangit?tab=packages
-2. Find the `superslice` package
-3. Click on it
-4. Go to "Package settings"
-5. Scroll down to "Danger Zone"
-6. Click "Change visibility" → "Public"
+How to run the published SuperSlice image. Images are published to GHCR
+automatically on release (`ghcr.io/bintangtimurlangit/superslice`); the release
+process itself is covered in [RELEASING.md](../RELEASING.md).
 
 ## Deployment Options
 

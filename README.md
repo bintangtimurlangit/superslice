@@ -8,37 +8,45 @@
 A small REST API for **3D print estimation**. POST an STL or 3MF file and get
 back the print time and filament usage a slicer would report — as JSON — so your
 own app doesn't have to run a slicer. It does one thing: estimate. Pricing,
-orders, and UI are left to whoever consumes it.
+orders, and UI are left to the app that calls it.
 
 It works by invoking **PrusaSlicer** headlessly and parsing the result.
 
 ## How it works
 
-There's no magic — SuperSlice is a thin wrapper around a real slicer:
-
-```
- your app ──POST /slice──▶ SuperSlice ──▶ PrusaSlicer CLI ──▶ G-code
-                                │                                │
-                                │   reads the summary comments   │
-                                │   PrusaSlicer writes:          │
-                                ▼                                ▼
-                         JSON  ◀──  ; estimated printing time (normal mode) = 19m 22s
-                                    ; filament used [mm]  = 1506.53
-                                    ; filament used [cm3] = 3.62
+```mermaid
+flowchart LR
+    app["Your app"] -->|"POST /slice + parameters"| ss["SuperSlice"]
+    ss -->|"runs headless"| ps["PrusaSlicer CLI"]
+    ps -->|"G-code"| ss
+    ss -->|"JSON estimate"| app
 ```
 
-1. **You upload** an STL/3MF plus the parameters you care about (layer height,
-   infill, walls, filament).
-2. **SuperSlice runs PrusaSlicer** on it headlessly — the exact same engine a
-   human would use in the desktop app — and produces real G-code.
-3. **It parses the numbers** PrusaSlicer writes into that G-code (print time and
-   filament used), computes weight from filament density, and returns JSON.
-4. **It throws everything away.** The upload and the G-code are deleted
-   immediately; nothing about your model is kept (unless you opt into history).
+1. You upload an STL/3MF with the parameters you control: **layer height,
+   infill density, wall count, and filament**.
+2. SuperSlice runs PrusaSlicer headlessly on it — the same engine as the desktop
+   app — producing real G-code.
+3. It reads the summary PrusaSlicer writes into that G-code:
 
-Because the heavy lifting is a genuine slicer, the numbers match what that
-slicer would report — not a guess. The trade-off is accuracy depends on the
-slicer profile; see [docs/ACCURACY.md](docs/ACCURACY.md).
+   ```
+   ; estimated printing time (normal mode) = 19m 22s
+   ; filament used [mm]  = 1506.53
+   ; filament used [cm3] = 3.62
+   ```
+
+   then computes weight from filament density and returns JSON.
+4. The upload and G-code are deleted immediately; nothing about your model is
+   kept unless you enable history.
+
+The numbers match what PrusaSlicer itself reports; accuracy depends on the
+slicer profile (see [docs/ACCURACY.md](docs/ACCURACY.md)).
+
+### Why PrusaSlicer 2.8.1?
+
+It's pinned deliberately. PrusaSlicer 2.9+ is distributed for Linux as a Flatpak
+only — it now depends on WebKitGTK, which is impractical to bundle in a slim
+container — so 2.8.1 is the last release available as a self-contained Linux
+AppImage, and it runs cleanly headless with no display or GPU.
 
 ## Quick start
 
@@ -74,6 +82,8 @@ curl -X POST http://localhost:8000/slice \
 ```
 
 → Full endpoints, parameters, and error codes: **[docs/API.md](docs/API.md)**.
+Prefer a GUI? Import the Postman collection at
+[docs/superslice.postman_collection.json](docs/superslice.postman_collection.json).
 
 ## Documentation
 
@@ -81,12 +91,24 @@ curl -X POST http://localhost:8000/slice \
 | --- | --- |
 | [API.md](docs/API.md) | Endpoints (incl. async jobs & history), parameters, auth, errors |
 | [CONFIGURATION.md](docs/CONFIGURATION.md) | Environment variables (incl. auth, rate limit, history) |
-| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Docker, Compose, cloud, reverse proxy |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Running the image: Compose, reverse proxy, cloud |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How it's built and how an estimate is produced |
-| [SLICER.md](docs/SLICER.md) | Why PrusaSlicer 2.8.1 is pinned |
 | [ACCURACY.md](docs/ACCURACY.md) | How realistic the numbers are, and how to improve them |
 | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues |
-| [ROADMAP.md](docs/ROADMAP.md) | What's planned next |
+
+## Upcoming
+
+Planned next (not built yet):
+
+- **Printer & filament presets** — pick a bundled PrusaSlicer profile so
+  estimates track a specific machine. This is the main accuracy lever.
+- **Richer output** — build-plate-fit and "needs supports" flags plus a model
+  bounding box in the response (depends on presets for bed size).
+- **Energy estimate** — optional wattage from a printer preset.
+
+Out of scope by design: pricing, orders, and any UI. Those are built by the app
+that calls SuperSlice (for example a 3D-printing website), not by SuperSlice
+itself — it only returns the estimate.
 
 ## Local development
 
