@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from ..config import (
     API_TITLE,
     API_VERSION,
+    BUILD_VOLUME_MM,
     FILAMENT_DENSITIES,
     HISTORY_ENABLED,
     OUTPUT_DIR,
@@ -94,11 +95,17 @@ async def slice_model(
     wall_count: int = Form(..., description="Number of perimeter walls (1-20)"),
     filament_type: str = Form("PLA"),
     filament_density: Optional[float] = Form(None),
+    check_supports: bool = Form(True, description="Detect whether supports are needed (extra slice)"),
+    build_volume_x: Optional[float] = Form(None, description="Override build volume X (mm)"),
+    build_volume_y: Optional[float] = Form(None, description="Override build volume Y (mm)"),
+    build_volume_z: Optional[float] = Form(None, description="Override build volume Z (mm)"),
 ):
     """Slice a model synchronously and return print statistics."""
-    input_path, output_path, params, filename = await _prepare_slice(
-        file, layer_height, infill_density, wall_count, filament_type, filament_density
+    params = _build_params(
+        layer_height, infill_density, wall_count, filament_type, filament_density,
+        check_supports, build_volume_x, build_volume_y, build_volume_z,
     )
+    input_path, output_path, filename = await _prepare_slice(file, params)
     try:
         return await _run_slice(input_path, output_path, params, filename)
     finally:
@@ -119,14 +126,20 @@ async def create_slice_job(
     wall_count: int = Form(...),
     filament_type: str = Form("PLA"),
     filament_density: Optional[float] = Form(None),
+    check_supports: bool = Form(True),
+    build_volume_x: Optional[float] = Form(None),
+    build_volume_y: Optional[float] = Form(None),
+    build_volume_z: Optional[float] = Form(None),
 ):
     """Accept a slice for async processing; poll `GET /jobs/{job_id}` for the result.
 
     Useful for large/complex models that would exceed a normal request timeout.
     """
-    input_path, output_path, params, filename = await _prepare_slice(
-        file, layer_height, infill_density, wall_count, filament_type, filament_density
+    params = _build_params(
+        layer_height, infill_density, wall_count, filament_type, filament_density,
+        check_supports, build_volume_x, build_volume_y, build_volume_z,
     )
+    input_path, output_path, filename = await _prepare_slice(file, params)
 
     async def runner() -> SliceResponse:
         try:
@@ -179,23 +192,35 @@ async def get_history_record(record_id: int):
 
 # --- helpers --------------------------------------------------------------
 
-async def _prepare_slice(
-    file: UploadFile,
-    layer_height: float,
-    infill_density: int,
-    wall_count: int,
-    filament_type: str,
-    filament_density: Optional[float],
-) -> Tuple[Path, Path, SliceParams, Optional[str]]:
-    """Validate inputs, guard resources, and save the upload to disk."""
-    validate_filename(file.filename)
-    params = SliceParams(
+def _build_params(
+    layer_height, infill_density, wall_count, filament_type, filament_density,
+    check_supports, build_volume_x, build_volume_y, build_volume_z,
+) -> SliceParams:
+    """Assemble SliceParams, resolving any per-request build-volume override."""
+    build_volume = None
+    if any(v is not None for v in (build_volume_x, build_volume_y, build_volume_z)):
+        bx, by, bz = BUILD_VOLUME_MM
+        build_volume = (
+            build_volume_x or bx,
+            build_volume_y or by,
+            build_volume_z or bz,
+        )
+    return SliceParams(
         layer_height=layer_height,
         infill_density=infill_density,
         wall_count=wall_count,
         filament_type=filament_type,
         filament_density=filament_density,
+        check_supports=check_supports,
+        build_volume=build_volume,
     )
+
+
+async def _prepare_slice(
+    file: UploadFile, params: SliceParams
+) -> Tuple[Path, Path, Optional[str]]:
+    """Validate inputs, guard resources, and save the upload to disk."""
+    validate_filename(file.filename)
     validate_params(params)
     check_disk_space()
 
@@ -203,7 +228,7 @@ async def _prepare_slice(
     input_path = UPLOAD_DIR / f"{job_id}_{file.filename}"
     output_path = OUTPUT_DIR / f"{job_id}.gcode"
     await save_upload(file, input_path)
-    return input_path, output_path, params, file.filename
+    return input_path, output_path, file.filename
 
 
 async def _run_slice(input_path, output_path, params, filename) -> SliceResponse:

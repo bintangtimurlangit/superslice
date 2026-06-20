@@ -20,6 +20,18 @@ PRUSASLICER_PATH = os.getenv(
 SLICE_TIMEOUT = int(os.getenv("SLICE_TIMEOUT", "120"))  # seconds
 MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", "104857600"))  # 100MB in bytes
 
+# Build volume (mm). Models larger than this are *flagged* (fits_build_volume),
+# not rejected — they still slice and return estimates. Per-request overrides
+# are accepted on the slice endpoints.
+BUILD_VOLUME_MM = (
+    float(os.getenv("BUILD_VOLUME_X", "256")),
+    float(os.getenv("BUILD_VOLUME_Y", "256")),
+    float(os.getenv("BUILD_VOLUME_Z", "256")),
+)
+# Margin added to the slicing bed beyond the model/build volume so PrusaSlicer
+# never rejects an over-sized model for being off the bed.
+BED_MARGIN_MM = float(os.getenv("BED_MARGIN_MM", "10"))
+
 # Filament densities (g/cm³)
 FILAMENT_DENSITIES = {
     "PLA": 1.24,

@@ -2,13 +2,15 @@
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 from fastapi import UploadFile
 from fastapi.concurrency import run_in_threadpool
 
 from . import history
 from ..config import (
+    BED_MARGIN_MM,
+    BUILD_VOLUME_MM,
     FILAMENT_DENSITIES,
     MAX_FILE_SIZE,
     MIN_FREE_DISK_MB,
@@ -17,8 +19,13 @@ from ..config import (
 )
 from ..core.errors import APIError
 from ..core.security import slice_slot
-from ..models import SliceResponse
-from .slicer import parse_gcode_statistics, run_slicer
+from ..models import Dimensions, SliceResponse
+from .slicer import (
+    gcode_has_support_material,
+    get_model_dimensions,
+    parse_gcode_statistics,
+    run_slicer,
+)
 
 DEFAULT_FILAMENT_DENSITY = 1.24  # PLA, used when a type is unknown
 
@@ -30,6 +37,8 @@ class SliceParams:
     wall_count: int
     filament_type: str = "PLA"
     filament_density: Optional[float] = None
+    check_supports: bool = True
+    build_volume: Optional[Tuple[float, float, float]] = None
 
 
 def validate_params(params: SliceParams) -> None:
@@ -104,15 +113,33 @@ async def perform_slice(
 ) -> SliceResponse:
     """Run the slicer (bounded by the concurrency cap), parse, and record it."""
     density = resolve_density(params)
+    build_volume = params.build_volume or BUILD_VOLUME_MM
+
+    # Measure the model and decide whether it fits the build volume. The bed is
+    # sized to comfortably hold the model so an over-sized one still slices
+    # (and returns estimates) instead of being rejected.
+    dims = await run_in_threadpool(get_model_dimensions, input_path)
+    fits = all(d <= bv for d, bv in zip(dims, build_volume))
+    bed = (
+        max(build_volume[0], dims[0]) + BED_MARGIN_MM,
+        max(build_volume[1], dims[1]) + BED_MARGIN_MM,
+    )
+    max_height = max(build_volume[2], dims[2]) + BED_MARGIN_MM
 
     async with slice_slot():
         await run_in_threadpool(
             run_slicer,
             input_path, output_path,
             params.layer_height, params.wall_count, params.infill_density,
+            bed=bed, max_height=max_height,
         )
 
     stats = parse_gcode_statistics(str(output_path), density)
+
+    requires_supports = None
+    if params.check_supports:
+        requires_supports = await _detect_supports(input_path, output_path, params, bed, max_height)
+
     response = SliceResponse(
         success=True,
         print_time_minutes=round(stats["print_time_seconds"] / 60, 2),
@@ -124,9 +151,34 @@ async def perform_slice(
         layer_height=params.layer_height,
         infill_density=params.infill_density,
         wall_count=params.wall_count,
+        model_dimensions_mm=Dimensions(
+            x=round(dims[0], 2), y=round(dims[1], 2), z=round(dims[2], 2)
+        ),
+        build_volume_mm=Dimensions(
+            x=build_volume[0], y=build_volume[1], z=build_volume[2]
+        ),
+        fits_build_volume=fits,
+        requires_supports=requires_supports,
     )
     history.record(params, response, filename)
     return response
+
+
+async def _detect_supports(input_path, output_path, params, bed, max_height) -> bool:
+    """Re-slice with auto supports and report whether any were generated."""
+    support_path = output_path.with_suffix(".support.gcode")
+    try:
+        async with slice_slot():
+            await run_in_threadpool(
+                run_slicer,
+                input_path, support_path,
+                params.layer_height, params.wall_count, params.infill_density,
+                bed=bed, max_height=max_height, with_supports=True,
+            )
+        return await run_in_threadpool(gcode_has_support_material, str(support_path))
+    finally:
+        if support_path.exists():
+            support_path.unlink()
 
 
 def sweep_work_dirs() -> int:
