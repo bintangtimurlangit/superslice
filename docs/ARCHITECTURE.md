@@ -25,15 +25,29 @@ The actual geometry work is done by **PrusaSlicer**, invoked as a separate
 command-line process. SuperSlice never links PrusaSlicer's code; it shells out,
 reads the G-code it produces, and throws the G-code away.
 
-## Modules
+## Layout
 
-| File | Responsibility |
-| --- | --- |
-| `app/main.py` | Application factory: builds the `FastAPI` app, adds CORS, includes the router. |
-| `app/routes.py` | HTTP endpoints (`/`, `/filament-types`, `/slice`) and request helpers (validation, upload streaming, cleanup). |
-| `app/slicer.py` | The PrusaSlicer integration: builds the CLI command, runs it, and parses the resulting G-code. |
-| `app/models.py` | Pydantic response schema (`SliceResponse`). |
-| `app/config.py` | Environment-driven configuration and constants (paths, timeouts, filament densities). |
+The package is grouped by responsibility:
+
+```
+app/
+├── main.py              # application factory + lifespan
+├── config.py            # environment-driven settings & constants
+├── models.py            # Pydantic schemas (responses, jobs, history, errors)
+├── api/
+│   └── routes.py        # all HTTP endpoints
+├── core/
+│   ├── errors.py        # APIError + structured error handlers
+│   └── security.py      # opt-in auth, rate limiting, concurrency cap
+└── services/
+    ├── slicer.py        # PrusaSlicer CLI + G-code parsing
+    ├── slicing.py       # orchestration: validate, save, slice, sweep
+    ├── jobs.py          # in-memory async job manager
+    └── history.py       # opt-in SQLite history
+```
+
+Dependency direction: `api → services → core → config`. The `core` and
+`services` layers never import from `api`.
 
 ## How an estimate is produced
 

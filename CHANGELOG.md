@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Async job mode** for large models: `POST /jobs` returns `202` with a job id;
+  poll `GET /jobs/{job_id}` for the result.
+- **Opt-in API-key authentication** (`API_KEYS`), **rate limiting**
+  (`RATE_LIMIT_PER_MINUTE`), and a **concurrency cap** (`MAX_CONCURRENT_SLICES`)
+  on the slicing endpoints — all disabled by default.
+- **Opt-in slicing history** (`HISTORY_ENABLED`, SQLite) with `GET /history` and
+  `GET /history/{id}`; stores parameters + results, never model files.
+- **Disk-space guard** (`MIN_FREE_DISK_MB`) and a **startup sweep** of orphaned
+  work files.
+- `GET /healthz` (liveness) and `GET /version` endpoints; OpenAPI examples.
+
+### Changed
+
+- **Structured error responses**: every error now includes a stable
+  `error.code` alongside the existing human-readable `detail`.
+- Reorganised the `app/` package into `api/`, `core/`, and `services/` layers.
+- The container healthcheck now targets `/healthz`.
+- API version reported by the service is now correct (`/version`, `/`).
+
 ## [1.1.0] - 2026-06-21
 
 ### Changed
