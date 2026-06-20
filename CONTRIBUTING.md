@@ -22,6 +22,13 @@ If you find a bug or have a feature request, please open an issue on GitHub with
 7. Push to your fork
 8. Open a Pull Request
 
+## Commit messages
+
+This project follows
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): start
+each commit with a type, e.g. `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`,
+`test:`. See [RELEASING.md](RELEASING.md) for how these map to versions.
+
 ## Code Style
 
 - Follow PEP 8 for Python code
@@ -31,11 +38,20 @@ If you find a bug or have a feature request, please open an issue on GitHub with
 
 ## Testing
 
+Run the unit + API test suite (no slicer binary required — PrusaSlicer is
+mocked):
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
 Before submitting a PR:
 
-- Test the Docker build: `docker-compose build`
-- Test the API endpoints
-- Verify no breaking changes
+- `pytest` passes
+- The Docker image builds: `docker compose build`
+- The API endpoints work (`docker compose up`, then exercise `/slice`)
+- Update `CHANGELOG.md` (under `Unreleased`) and docs if behaviour changed
 
 ## Pull Request Process
 
