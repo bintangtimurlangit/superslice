@@ -43,6 +43,8 @@ Slice a model and return print statistics synchronously. Body is
 | `wall_count` | yes | Number of perimeter walls (1 – 20) |
 | `filament_type` | no | Filament type (default `PLA`) |
 | `filament_density` | no | Custom density in g/cm³ (overrides `filament_type`) |
+| `check_supports` | no | Detect whether supports are needed (default `true`; does an extra slice — set `false` to skip) |
+| `build_volume_x/y/z` | no | Override the build volume per axis in mm (defaults to `BUILD_VOLUME_*`, 256 each) |
 
 ```bash
 curl -X POST http://localhost:8000/slice \
@@ -62,9 +64,20 @@ curl -X POST http://localhost:8000/slice \
   "filament_type": "PLA",
   "layer_height": 0.2,
   "infill_density": 20,
-  "wall_count": 3
+  "wall_count": 3,
+  "model_dimensions_mm": { "x": 80.0, "y": 80.0, "z": 40.0 },
+  "build_volume_mm": { "x": 256.0, "y": 256.0, "z": 256.0 },
+  "fits_build_volume": true,
+  "requires_supports": false
 }
 ```
+
+**Build plate & supports.** The response reports the model's bounding box
+(`model_dimensions_mm`) against the configured `build_volume_mm` and sets
+`fits_build_volume`. A model larger than the build volume is **flagged, not
+rejected** — it still slices and returns estimates with `fits_build_volume:
+false`. `requires_supports` is `true`/`false` from a support-detection slice, or
+`null` when `check_supports=false`.
 
 ## Async slicing (large models)
 
