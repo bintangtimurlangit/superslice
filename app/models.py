@@ -4,6 +4,13 @@ from typing import Any, List, Optional
 from pydantic import BaseModel, Field
 
 
+class Dimensions(BaseModel):
+    """A bounding box / volume in millimetres."""
+    x: float
+    y: float
+    z: float
+
+
 class SliceResponse(BaseModel):
     """Response model with slicing results."""
     success: bool
@@ -16,8 +23,16 @@ class SliceResponse(BaseModel):
     layer_height: float
     infill_density: int
     wall_count: int
+    # Build-plate fit
+    model_dimensions_mm: Dimensions
+    build_volume_mm: Dimensions
+    fits_build_volume: bool
+    # Whether the model needs support material (None if not checked)
+    requires_supports: Optional[bool] = None
 
     model_config = {
+        # `model_dimensions_mm` refers to the 3D model, not a Pydantic model.
+        "protected_namespaces": (),
         "json_schema_extra": {
             "example": {
                 "success": True,
@@ -30,6 +45,10 @@ class SliceResponse(BaseModel):
                 "layer_height": 0.2,
                 "infill_density": 20,
                 "wall_count": 3,
+                "model_dimensions_mm": {"x": 80.0, "y": 80.0, "z": 40.0},
+                "build_volume_mm": {"x": 256.0, "y": 256.0, "z": 256.0},
+                "fits_build_volume": True,
+                "requires_supports": False,
             }
         }
     }
