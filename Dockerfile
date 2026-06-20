@@ -58,13 +58,13 @@ COPY ./app /srv/app
 
 # Run as an unprivileged user; give it ownership of the work directories.
 RUN useradd --create-home --uid 10001 app \
-    && mkdir -p /srv/uploads /srv/output \
+    && mkdir -p /srv/uploads /srv/output /srv/data \
     && chown -R app:app /srv
 USER app
 
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')" || exit 1
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
