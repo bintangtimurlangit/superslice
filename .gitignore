@@ -8,6 +8,12 @@ venv/
 ENV/
 .venv
 
+# Test / tooling caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
 # Environment
 .env
 
@@ -16,9 +22,6 @@ uploads/*
 !uploads/.gitkeep
 output/*
 !output/.gitkeep
-
-# Docker
-.dockerignore
 
 # IDE
 .vscode/
