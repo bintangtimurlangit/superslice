@@ -14,6 +14,8 @@ _VALID_FORM = {"layer_height": "0.2", "infill_density": "20", "wall_count": "3"}
 
 def _mock_slicer(monkeypatch):
     monkeypatch.setattr(slicing, "run_slicer", lambda *a, **k: None)
+    monkeypatch.setattr(slicing, "get_model_dimensions", lambda p: (10.0, 10.0, 10.0))
+    monkeypatch.setattr(slicing, "gcode_has_support_material", lambda p: False)
     monkeypatch.setattr(
         slicing,
         "parse_gcode_statistics",
