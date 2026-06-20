@@ -7,13 +7,13 @@ UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "/app/uploads"))
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "/app/output"))
 
 # Ensure directories exist
-UPLOAD_DIR.mkdir(exist_ok=True)
-OUTPUT_DIR.mkdir(exist_ok=True)
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # PrusaSlicer configuration
 PRUSASLICER_PATH = os.getenv(
-    "PRUSASLICER_PATH", 
-    "/slic3r/squashfs-root/usr/bin/prusa-slicer"
+    "PRUSASLICER_PATH",
+    "/opt/prusaslicer/usr/bin/prusa-slicer"
 )
 
 # Processing limits

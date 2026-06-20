@@ -4,7 +4,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict
 
-from config import PRUSASLICER_PATH, SLICE_TIMEOUT
+from .config import PRUSASLICER_PATH, SLICE_TIMEOUT
 
 
 def parse_gcode_statistics(gcode_path: str, filament_density: float) -> Dict[str, any]:
@@ -55,24 +55,21 @@ def parse_gcode_statistics(gcode_path: str, filament_density: float) -> Dict[str
 
 def _parse_time_string(time_str: str) -> int:
     """
-    Convert time string (e.g., '1h 30m 45s') to total seconds
-    
+    Convert time string (e.g., '1d 2h 30m 45s') to total seconds
+
+    Tolerates any missing units (e.g. '19m 22s' or '45s') without raising.
+
     Args:
         time_str: Time string from G-code
-        
+
     Returns:
         Total seconds as integer
     """
-    hours = minutes = seconds = 0
-    
-    if 'h' in time_str:
-        hours = int(re.search(r'(\d+)h', time_str).group(1))
-    if 'm' in time_str:
-        minutes = int(re.search(r'(\d+)m', time_str).group(1))
-    if 's' in time_str:
-        seconds = int(re.search(r'(\d+)s', time_str).group(1))
-    
-    return hours * 3600 + minutes * 60 + seconds
+    units = {'d': 86400, 'h': 3600, 'm': 60, 's': 1}
+    total = 0
+    for value, unit in re.findall(r'(\d+)\s*([dhms])', time_str):
+        total += int(value) * units[unit]
+    return total
 
 
 def run_slicer(
