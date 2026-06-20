@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Postman collection (`docs/superslice.postman_collection.json`) covering every
+  endpoint.
+- A Mermaid "How it works" diagram and a "Why PrusaSlicer 2.8.1?" note in the
+  README.
+
+### Removed
+
+- `docs/SLICER.md` and `docs/ROADMAP.md` — folded into the README (the
+  pinned-version rationale and the short upcoming list, respectively).
+- The GitHub Container Registry account-setup section from `docs/DEPLOYMENT.md`
+  (the release flow lives in `RELEASING.md`).
+
 ## [1.2.0] - 2026-06-21
 
 ### Added

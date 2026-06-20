@@ -50,4 +50,5 @@ changelog entry as the release notes.
 ## Versioning the slicer
 
 The bundled PrusaSlicer version is independent of SuperSlice's version. If you
-change it, note it in the changelog and update [docs/SLICER.md](docs/SLICER.md).
+change it, update the three `ARG`s in the `Dockerfile`, note it in the
+changelog, and refresh the "Why PrusaSlicer 2.8.1?" note in the README.

@@ -88,5 +88,6 @@ uses a unique job id for its temp files, and those files are always removed in a
   license while using an AGPL slicer — see the License section of the
   [main README](../README.md#license--attribution).
 
-For the rationale behind the specific slicer and version, see
-[SLICER.md](SLICER.md). For estimate accuracy, see [ACCURACY.md](ACCURACY.md).
+For why this specific slicer version is pinned, see
+[Why PrusaSlicer 2.8.1?](../README.md#why-prusaslicer-281) in the README. For
+estimate accuracy, see [ACCURACY.md](ACCURACY.md).
