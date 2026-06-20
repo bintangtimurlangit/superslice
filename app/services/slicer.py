@@ -4,7 +4,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict
 
-from .config import PRUSASLICER_PATH, SLICE_TIMEOUT
+from ..config import PRUSASLICER_PATH, SLICE_TIMEOUT
 
 
 def parse_gcode_statistics(gcode_path: str, filament_density: float) -> Dict[str, any]:
