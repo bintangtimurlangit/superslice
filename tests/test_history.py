@@ -1,5 +1,5 @@
 """Tests for the opt-in SQLite slicing history."""
-from app.models import SliceResponse
+from app.models import Dimensions, SliceResponse
 from app.services import history
 from app.services.slicing import SliceParams
 
@@ -16,6 +16,10 @@ def _response():
         layer_height=0.2,
         infill_density=20,
         wall_count=3,
+        model_dimensions_mm=Dimensions(x=80.0, y=80.0, z=40.0),
+        build_volume_mm=Dimensions(x=256.0, y=256.0, z=256.0),
+        fits_build_volume=True,
+        requires_supports=False,
     )
 
 

@@ -76,6 +76,8 @@ def test_job_manager_prunes_to_retention():
 
 def test_create_job_returns_202(monkeypatch):
     monkeypatch.setattr(slicing, "run_slicer", lambda *a, **k: None)
+    monkeypatch.setattr(slicing, "get_model_dimensions", lambda p: (10.0, 10.0, 10.0))
+    monkeypatch.setattr(slicing, "gcode_has_support_material", lambda p: False)
     monkeypatch.setattr(
         slicing,
         "parse_gcode_statistics",

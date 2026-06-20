@@ -61,6 +61,8 @@ def test_rejects_out_of_range_parameters(field, value):
 def test_successful_slice_is_shaped_correctly(monkeypatch):
     # Pretend PrusaSlicer ran successfully...
     monkeypatch.setattr(slicing, "run_slicer", lambda *a, **k: None)
+    monkeypatch.setattr(slicing, "get_model_dimensions", lambda p: (80.0, 80.0, 40.0))
+    monkeypatch.setattr(slicing, "gcode_has_support_material", lambda p: False)
     # ...and produced these stats.
     monkeypatch.setattr(
         slicing,
