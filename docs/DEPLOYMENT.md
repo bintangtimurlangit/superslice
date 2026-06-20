@@ -81,8 +81,6 @@ docker run -d \
 Create a `docker-compose.yml`:
 
 ```yaml
-version: "3.8"
-
 services:
   superslice:
     image: ghcr.io/bintangtimurlangit/superslice:1.0.0

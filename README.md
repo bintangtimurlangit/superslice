@@ -77,8 +77,6 @@ docker run -d \
 Using docker-compose with pre-built image:
 
 ```yaml
-version: "3.8"
-
 services:
   superslice:
     image: ghcr.io/bintangtimurlangit/superslice:latest
@@ -216,14 +214,15 @@ CORS_ORIGINS=https://example.com,https://app.example.com
 
 ```
 superslice/
-├── app/
-│   ├── main.py       # FastAPI application and routes
-│   ├── config.py     # Configuration settings
-│   ├── models.py     # Pydantic models
-│   └── slicer.py     # PrusaSlicer integration
-├── tests/            # pytest unit + API tests
-├── docs/             # In-depth documentation
-├── Dockerfile        # Self-owned image (fetches + extracts PrusaSlicer)
+├── app/                  # FastAPI application package
+│   ├── main.py           # App factory, middleware, CORS
+│   ├── routes.py         # HTTP endpoints and request helpers
+│   ├── config.py         # Configuration settings
+│   ├── models.py         # Pydantic response models
+│   └── slicer.py         # PrusaSlicer integration + G-code parsing
+├── tests/                # pytest unit + API tests
+├── docs/                 # In-depth documentation
+├── Dockerfile            # Self-owned image (fetches + extracts PrusaSlicer)
 ├── docker-compose.yml
 ├── requirements.txt
 ├── requirements-dev.txt
@@ -231,7 +230,7 @@ superslice/
 ```
 
 For a deeper tour, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
-[docs/ACCURACY.md](docs/ACCURACY.md), and
+[docs/SLICER.md](docs/SLICER.md), [docs/ACCURACY.md](docs/ACCURACY.md), and
 [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 ### Running Locally
@@ -240,12 +239,15 @@ The Python app is lightweight and does not require Docker. It does require a
 PrusaSlicer binary on the host; point `PRUSASLICER_PATH` at it (on macOS this is
 inside `PrusaSlicer.app`).
 
+Run from the repository root (the app is a package, so the target is
+`app.main:app`):
+
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 export PRUSASLICER_PATH=/path/to/prusa-slicer
 export UPLOAD_DIR=./uploads OUTPUT_DIR=./output
-cd app && uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
 Tip: the fastest fully-working setup is just `docker compose up --build` — it
@@ -273,8 +275,9 @@ Interactive API documentation is available at:
 The API returns standard HTTP status codes:
 
 - `200`: Success
-- `400`: Invalid request parameters or unsupported file format
+- `400`: Invalid request parameters, unsupported file format, or empty upload
 - `408`: Slicing timeout (model too complex)
+- `413`: Upload exceeds the maximum file size
 - `500`: Internal server error
 
 Error response format:
