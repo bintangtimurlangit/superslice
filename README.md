@@ -12,6 +12,34 @@ orders, and UI are left to whoever consumes it.
 
 It works by invoking **PrusaSlicer** headlessly and parsing the result.
 
+## How it works
+
+There's no magic — SuperSlice is a thin wrapper around a real slicer:
+
+```
+ your app ──POST /slice──▶ SuperSlice ──▶ PrusaSlicer CLI ──▶ G-code
+                                │                                │
+                                │   reads the summary comments   │
+                                │   PrusaSlicer writes:          │
+                                ▼                                ▼
+                         JSON  ◀──  ; estimated printing time (normal mode) = 19m 22s
+                                    ; filament used [mm]  = 1506.53
+                                    ; filament used [cm3] = 3.62
+```
+
+1. **You upload** an STL/3MF plus the parameters you care about (layer height,
+   infill, walls, filament).
+2. **SuperSlice runs PrusaSlicer** on it headlessly — the exact same engine a
+   human would use in the desktop app — and produces real G-code.
+3. **It parses the numbers** PrusaSlicer writes into that G-code (print time and
+   filament used), computes weight from filament density, and returns JSON.
+4. **It throws everything away.** The upload and the G-code are deleted
+   immediately; nothing about your model is kept (unless you opt into history).
+
+Because the heavy lifting is a genuine slicer, the numbers match what that
+slicer would report — not a guess. The trade-off is accuracy depends on the
+slicer profile; see [docs/ACCURACY.md](docs/ACCURACY.md).
+
 ## Quick start
 
 Run the published image:
@@ -51,8 +79,8 @@ curl -X POST http://localhost:8000/slice \
 
 | Doc | What's in it |
 | --- | --- |
-| [API.md](docs/API.md) | Endpoints, parameters, responses, filament types, errors |
-| [CONFIGURATION.md](docs/CONFIGURATION.md) | Environment variables |
+| [API.md](docs/API.md) | Endpoints (incl. async jobs & history), parameters, auth, errors |
+| [CONFIGURATION.md](docs/CONFIGURATION.md) | Environment variables (incl. auth, rate limit, history) |
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Docker, Compose, cloud, reverse proxy |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How it's built and how an estimate is produced |
 | [SLICER.md](docs/SLICER.md) | Why PrusaSlicer 2.8.1 is pinned |

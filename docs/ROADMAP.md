@@ -8,6 +8,14 @@ price prints, manage orders, or own a UI — consumers build that on top.
 This roadmap collects planned and proposed improvements. Nothing here is
 committed to a date; it's a menu to pull from. Ordered roughly by value.
 
+## Shipped in v1.2.0
+
+- ✅ Opt-in **API-key auth**, **rate limiting**, and a **concurrency cap**.
+- ✅ **Startup file sweep** + **disk-space guard**.
+- ✅ Opt-in **slicing history** (SQLite) with `/history` endpoints.
+- ✅ **Structured error envelope** (`error.code`), **OpenAPI examples**,
+  `/healthz` and `/version`, and an **async job mode** (`POST /jobs` + polling).
+
 ## 1. Printer & filament presets  *(next up)*
 
 Today the API exposes only layer height, walls, and infill; everything else uses
@@ -41,40 +49,22 @@ energy use. Keep cost out of the core (no pricing), but allow an optional input:
 - Optional request field like `energy_cost_per_kwh` → returns
   `estimated_energy_kwh` and, only if a cost is supplied, a derived cost.
 
-## 4. Hardening for public/shared deployments
+## 4. Remaining hardening (builds on v1.2.0)
 
-- **Authentication:** optional API-key middleware (header-based), toggled by an
-  env var so it stays zero-config for local use.
-- **Rate limiting:** per-key / per-IP limits to protect the slicer from abuse
-  (slicing is CPU-heavy).
-- **Concurrency cap:** bound simultaneous slices so the host isn't overwhelmed
-  (a semaphore around `run_in_threadpool`).
+Auth, rate limiting, the concurrency cap, and the disk guard shipped in v1.2.0.
+Still open:
 
-## 5. Temp-file & disk hygiene
+- **Global (cross-replica) rate limiting** — the current limiter is in-process;
+  a shared backend (e.g. Redis) would enforce limits across replicas.
+- **Configurable temp location** and an optional **result retention window**
+  (re-fetch a recent result instead of re-slicing).
+- **History storage backends** beyond SQLite, and a retention/pruning policy.
 
-Files are already deleted per request in a `finally` block. Make this robust:
+## 5. Smaller polish
 
-- Startup sweep of any orphaned files from crashed requests.
-- Disk-usage guard / configurable temp location.
-- Optional retention window if a result needs to be re-fetched.
-
-## 6. Slicing history (optional, opt-in)
-
-Persist a record of past slices (parameters + results, not the model files) for
-consumers who want it:
-
-- Pluggable storage (start with SQLite), disabled by default.
-- `GET /history` / `GET /history/{id}` endpoints.
-- Clear data-retention + privacy story, since models belong to the caller.
-
-## 7. Smaller polish
-
-- Structured error responses (consistent JSON error schema).
-- OpenAPI examples on every endpoint for easier integration.
-- A `/healthz` (liveness) vs `/` split, and a `/version` endpoint.
-- Async job mode (`202 Accepted` + poll) for very large models that exceed a
-  request timeout.
-- Auto-orient / auto-arrange before slicing (optional).
+- Auto-orient / auto-arrange a model before slicing (optional).
+- Durable async jobs (survive a restart) — currently in-memory only.
+- Per-endpoint OpenAPI request examples beyond the response examples added.
 
 ## Out of scope (by design)
 

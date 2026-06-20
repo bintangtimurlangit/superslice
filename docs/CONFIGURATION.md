@@ -12,12 +12,40 @@ have sensible defaults; the service runs with zero configuration.
 | `MAX_FILE_SIZE` | `104857600` | Max upload size in bytes (100 MB) before a `413`. |
 | `CORS_ORIGINS` | `*` | Comma-separated allowed origins. |
 
+### Protection (all opt-in, disabled by default)
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `API_KEYS` | _(empty)_ | Comma-separated keys. When set, `/slice` and `/jobs` require a matching `X-API-Key` (or `Authorization: Bearer`) header. Empty = no auth. |
+| `RATE_LIMIT_PER_MINUTE` | `0` | Max slice requests per minute per client (by key, else IP). `0` = unlimited. In-process / per replica. |
+| `MAX_CONCURRENT_SLICES` | `0` | Max simultaneous slices; extra requests queue. `0` = unlimited. |
+| `MIN_FREE_DISK_MB` | `0` | Refuse new slices (`503`) when free disk in the work dir falls below this. `0` = disabled. |
+
+### Slicing history (opt-in)
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `HISTORY_ENABLED` | `false` | Persist a record of each slice (parameters + results, never model files) to SQLite, exposed at `/history`. |
+| `HISTORY_DB_PATH` | `/srv/data/history.db` | SQLite database location. |
+
+### Async jobs
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `JOB_RETENTION` | `100` | Number of finished async jobs kept in the in-memory store. |
+
 Example `.env`:
 
 ```bash
 SLICE_TIMEOUT=180
 MAX_FILE_SIZE=209715200
 CORS_ORIGINS=https://example.com,https://app.example.com
+
+# Lock it down for a shared deployment:
+API_KEYS=key-for-app-a,key-for-app-b
+RATE_LIMIT_PER_MINUTE=30
+MAX_CONCURRENT_SLICES=4
+HISTORY_ENABLED=true
 ```
 
 > In Docker the defaults already point at the in-container paths, so you only

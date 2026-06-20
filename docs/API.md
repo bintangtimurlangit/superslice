@@ -3,30 +3,37 @@
 Base URL defaults to `http://localhost:8000`. Interactive docs are served at
 `/docs` (Swagger UI) and `/redoc`.
 
-## `GET /`
+## Authentication
 
-Health/info endpoint.
+Disabled by default. If `API_KEYS` is configured (see
+[CONFIGURATION.md](CONFIGURATION.md)), the slicing endpoints (`/slice`, `/jobs`)
+require a key via either header:
 
-```json
-{ "service": "SuperSlice API", "status": "running", "version": "1.1.0" }
 ```
+X-API-Key: <key>
+Authorization: Bearer <key>
+```
+
+Missing/invalid keys return `401` with `error.code = "UNAUTHORIZED"`.
+
+## Health & info
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /` | Service info: `{ "service", "status", "version" }` |
+| `GET /healthz` | Liveness probe: `{ "status": "ok" }` |
+| `GET /version` | `{ "service", "version", "slicer": "PrusaSlicer 2.8.1" }` |
 
 ## `GET /filament-types`
 
-Returns the built-in filament densities used to compute weight.
-
 ```json
-{
-  "filament_types": {
-    "PLA": 1.24, "PETG": 1.27, "ABS": 1.04,
-    "TPU": 1.21, "NYLON": 1.14, "ASA": 1.07
-  }
-}
+{ "filament_types": { "PLA": 1.24, "PETG": 1.27, "ABS": 1.04, "TPU": 1.21, "NYLON": 1.14, "ASA": 1.07 } }
 ```
 
 ## `POST /slice`
 
-Slice a model and return print statistics. Body is `multipart/form-data`.
+Slice a model and return print statistics synchronously. Body is
+`multipart/form-data`.
 
 | Field | Required | Description |
 | --- | --- | --- |
@@ -40,9 +47,7 @@ Slice a model and return print statistics. Body is `multipart/form-data`.
 ```bash
 curl -X POST http://localhost:8000/slice \
   -F "file=@model.stl" \
-  -F "layer_height=0.2" \
-  -F "infill_density=20" \
-  -F "wall_count=3" \
+  -F "layer_height=0.2" -F "infill_density=20" -F "wall_count=3" \
   -F "filament_type=PLA"
 ```
 
@@ -61,6 +66,45 @@ curl -X POST http://localhost:8000/slice \
 }
 ```
 
+## Async slicing (large models)
+
+For models that may exceed a normal request timeout, submit a job and poll.
+
+### `POST /jobs`
+
+Same form fields as `/slice`. Returns `202 Accepted`:
+
+```json
+{ "job_id": "834528f6...", "status": "pending", "status_url": "/jobs/834528f6..." }
+```
+
+### `GET /jobs/{job_id}`
+
+```json
+{
+  "job_id": "834528f6...",
+  "status": "succeeded",
+  "created_at": 1781990263.42,
+  "finished_at": 1781990263.68,
+  "result": { "success": true, "print_time_formatted": "19m 22s", "...": "..." },
+  "error": null
+}
+```
+
+`status` is one of `pending`, `running`, `succeeded`, `failed`. Jobs are stored
+in memory and do not survive a restart (see `JOB_RETENTION`). Unknown ids return
+`404`.
+
+## Slicing history (opt-in)
+
+Enabled with `HISTORY_ENABLED=true`. Stores parameters + results of past slices
+(never the model files). When disabled, these return `404 HISTORY_DISABLED`.
+
+| Endpoint | Description |
+| --- | --- |
+| `GET /history?limit=50&offset=0` | `{ "count", "items": [ ... ] }` |
+| `GET /history/{id}` | A single record |
+
 ## Filament types & density
 
 Weight is computed as `volume_cm3 × density`. Built-in densities (g/cm³):
@@ -74,28 +118,29 @@ Weight is computed as `volume_cm3 × density`. Built-in densities (g/cm³):
 | NYLON | 1.14 | Polyamide — strong, abrasion resistant |
 | ASA | 1.07 | Acrylonitrile Styrene Acrylate — UV resistant |
 
-For materials not listed (or a known different density), pass `filament_density`:
-
-```bash
-curl -X POST http://localhost:8000/slice \
-  -F "file=@model.stl" -F "layer_height=0.2" \
-  -F "infill_density=20" -F "wall_count=3" \
-  -F "filament_density=1.30"
-```
-
+For materials not listed (or a known different density), pass `filament_density`.
 To change the built-in table, edit `FILAMENT_DENSITIES` in `app/config.py`.
 
 ## Errors
 
-Standard HTTP status codes; the body is `{ "detail": "<message>" }`.
+Every error uses a consistent envelope. `detail` is the human-readable message;
+`error.code` is the stable identifier to branch on:
 
-| Code | Meaning |
+```json
+{ "detail": "File exceeds maximum size of 104857600 bytes",
+  "error": { "code": "FILE_TOO_LARGE", "message": "File exceeds maximum size of 104857600 bytes" } }
+```
+
+| Status | `error.code` examples |
 | --- | --- |
-| `200` | Success |
-| `400` | Invalid parameters, unsupported file format, or empty upload |
-| `408` | Slicing timeout (model too complex / `SLICE_TIMEOUT` exceeded) |
-| `413` | Upload exceeds `MAX_FILE_SIZE` |
-| `500` | Internal error (includes the slicer's stderr on slicing failure) |
+| `400` | `UNSUPPORTED_FILE`, `EMPTY_FILE`, `INVALID_PARAMETER` |
+| `401` | `UNAUTHORIZED` |
+| `404` | `JOB_NOT_FOUND`, `RECORD_NOT_FOUND`, `HISTORY_DISABLED` |
+| `408` | `SLICE_TIMEOUT` |
+| `413` | `FILE_TOO_LARGE` |
+| `422` | `VALIDATION_ERROR` (malformed request) |
+| `429` | `RATE_LIMITED` (includes `Retry-After` header) |
+| `500` | `SLICE_FAILED`, `INTERNAL_ERROR` |
+| `503` | `INSUFFICIENT_STORAGE` |
 
-See [ACCURACY.md](ACCURACY.md) for how realistic the numbers are and how to
-improve them.
+See [ACCURACY.md](ACCURACY.md) for how realistic the numbers are.
