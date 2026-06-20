@@ -221,28 +221,45 @@ superslice/
 │   ├── config.py     # Configuration settings
 │   ├── models.py     # Pydantic models
 │   └── slicer.py     # PrusaSlicer integration
-├── Dockerfile
+├── tests/            # pytest unit + API tests
+├── docs/             # In-depth documentation
+├── Dockerfile        # Self-owned image (fetches + extracts PrusaSlicer)
 ├── docker-compose.yml
 ├── requirements.txt
+├── requirements-dev.txt
 └── README.md
 ```
 
+For a deeper tour, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
+[docs/ACCURACY.md](docs/ACCURACY.md), and
+[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
+
 ### Running Locally
 
-1. Install dependencies:
+The Python app is lightweight and does not require Docker. It does require a
+PrusaSlicer binary on the host; point `PRUSASLICER_PATH` at it (on macOS this is
+inside `PrusaSlicer.app`).
 
 ```bash
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+export PRUSASLICER_PATH=/path/to/prusa-slicer
+export UPLOAD_DIR=./uploads OUTPUT_DIR=./output
+cd app && uvicorn main:app --reload
 ```
 
-2. Run the application:
+Tip: the fastest fully-working setup is just `docker compose up --build` — it
+bundles a verified PrusaSlicer.
+
+### Running Tests
 
 ```bash
-cd app
-python main.py
+pip install -r requirements-dev.txt
+pytest
 ```
 
-Note: Local development requires PrusaSlicer to be installed and configured.
+The tests cover G-code parsing, time-string parsing, parameter validation, and
+the API request/response flow (PrusaSlicer is mocked, so no binary is needed).
 
 ## API Documentation
 
@@ -268,6 +285,33 @@ Error response format:
 }
 ```
 
-## License
+## License & Attribution
 
-This project is provided as-is for 3D printing estimation purposes.
+SuperSlice's own source code is licensed under the [MIT License](LICENSE) — use
+it freely, including in commercial products.
+
+### Third-party: PrusaSlicer (AGPL-3.0)
+
+SuperSlice produces estimates by invoking **PrusaSlicer** (a fork of Slic3r) as
+a separate command-line program, and bundles its **official, unmodified** Linux
+build inside the Docker image:
+
+- **Version:** 2.8.1
+- **License:** AGPL-3.0
+- **Corresponding source:** https://github.com/prusa3d/PrusaSlicer/releases/tag/version_2.8.1
+
+Calling PrusaSlicer as a separate process (rather than linking its code) keeps
+SuperSlice's own code MIT-licensed. The **distributed Docker image as a whole**
+contains AGPL-3.0 software, so if you redistribute the image you must keep this
+attribution, the AGPL license, and the pointer to corresponding source above.
+"PrusaSlicer" and "Prusa" are trademarks of Prusa Research a.s.; SuperSlice is
+not affiliated with or endorsed by them.
+
+> **Note on slicer version:** PrusaSlicer 2.8.1 is pinned deliberately — it is
+> the last release distributed as a Linux AppImage (2.9+ is Flatpak-only), and
+> it runs cleanly headless in a container. See [docs/SLICER.md](docs/SLICER.md).
+
+> **Note on accuracy:** estimates currently use PrusaSlicer's built-in defaults
+> for everything except layer height, perimeters, and infill, so the numbers are
+> approximate. To make them track a specific printer/filament, load a profile —
+> see [docs/ACCURACY.md](docs/ACCURACY.md).
