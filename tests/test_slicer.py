@@ -3,7 +3,7 @@ import textwrap
 
 import pytest
 
-from app.slicer import _parse_time_string, parse_gcode_statistics
+from app.services.slicer import _parse_time_string, parse_gcode_statistics
 
 
 class TestParseTimeString:

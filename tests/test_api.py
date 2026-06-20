@@ -3,13 +3,11 @@
 Slicing itself (the PrusaSlicer subprocess) is mocked so these run without the
 binary; they exercise routing, validation, and response shaping.
 """
-import io
-
 import pytest
 from fastapi.testclient import TestClient
 
-from app import routes
 from app.main import app
+from app.services import slicing
 
 client = TestClient(app)
 
@@ -62,10 +60,10 @@ def test_rejects_out_of_range_parameters(field, value):
 
 def test_successful_slice_is_shaped_correctly(monkeypatch):
     # Pretend PrusaSlicer ran successfully...
-    monkeypatch.setattr(routes, "run_slicer", lambda *a, **k: None)
+    monkeypatch.setattr(slicing, "run_slicer", lambda *a, **k: None)
     # ...and produced these stats.
     monkeypatch.setattr(
-        routes,
+        slicing,
         "parse_gcode_statistics",
         lambda path, density: {
             "filament_length_mm": 1506.53,
