@@ -1,320 +1,89 @@
 # SuperSlice
 
 [![Docker Build](https://github.com/bintangtimurlangit/superslice/actions/workflows/docker-build.yml/badge.svg)](https://github.com/bintangtimurlangit/superslice/actions/workflows/docker-build.yml)
+[![Tests](https://github.com/bintangtimurlangit/superslice/actions/workflows/tests.yml/badge.svg)](https://github.com/bintangtimurlangit/superslice/actions/workflows/tests.yml)
 [![GitHub release](https://img.shields.io/github/v/release/bintangtimurlangit/superslice)](https://github.com/bintangtimurlangit/superslice/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A REST API service for 3D print estimation using PrusaSlicer. Upload STL or 3MF files and receive detailed print statistics including time, filament usage, and material weight.
+A small REST API for **3D print estimation**. POST an STL or 3MF file and get
+back the print time and filament usage a slicer would report — as JSON — so your
+own app doesn't have to run a slicer. It does one thing: estimate. Pricing,
+orders, and UI are left to whoever consumes it.
 
-## Features
+It works by invoking **PrusaSlicer** headlessly and parsing the result.
 
-- RESTful API for 3D model slicing
-- Support for STL and 3MF file formats
-- Configurable slicing parameters (layer height, infill, walls)
-- Predefined filament types with accurate density calculations (currently supports 6 common materials)
-- Docker-based deployment for easy setup
-- Health check endpoint for monitoring
+## Quick start
 
-Note: Currently only supports predefined filament types. Custom filament density support is available via the `filament_density` parameter.
-
-## Filament Configuration
-
-SuperSlice comes with predefined density values for common 3D printing filaments. These densities are used to calculate accurate material weight estimates.
-
-### Supported Filament Types
-
-| Filament Type | Density (g/cm³) | Description                                               |
-| ------------- | --------------- | --------------------------------------------------------- |
-| PLA           | 1.24            | Polylactic Acid - Most common, biodegradable              |
-| PETG          | 1.27            | Polyethylene Terephthalate Glycol - Strong, flexible      |
-| ABS           | 1.04            | Acrylonitrile Butadiene Styrene - Durable, heat resistant |
-| TPU           | 1.21            | Thermoplastic Polyurethane - Flexible, rubber-like        |
-| NYLON         | 1.14            | Polyamide - Strong, abrasion resistant                    |
-| ASA           | 1.07            | Acrylonitrile Styrene Acrylate - UV resistant             |
-
-### Using Custom Density
-
-If your filament type is not listed or has a different density, you can override the density calculation:
+Run the published image:
 
 ```bash
-curl -X POST http://localhost:8000/slice \
-  -F "file=@model.stl" \
-  -F "layer_height=0.2" \
-  -F "infill_density=20" \
-  -F "wall_count=3" \
-  -F "filament_density=1.30"
-```
-
-To modify the predefined filament types, edit the `FILAMENT_DENSITIES` dictionary in `app/config.py`.
-
-## Quick Start
-
-### Prerequisites
-
-- Docker
-- Docker Compose (optional, for easier setup)
-
-### Option 1: Use Pre-built Image (Recommended)
-
-Pull and run the latest pre-built image from GitHub Container Registry:
-
-```bash
-docker run -d \
-  --name superslice \
-  -p 8000:8000 \
+docker run -d --name superslice -p 8000:8000 \
   ghcr.io/bintangtimurlangit/superslice:latest
 ```
 
-Or use a specific version:
+Or build from source: `docker compose up --build`. Either way the API is at
+`http://localhost:8000` (interactive docs at `/docs`).
 
-```bash
-docker run -d \
-  --name superslice \
-  -p 8000:8000 \
-  ghcr.io/bintangtimurlangit/superslice:1.0.0
-```
-
-Using docker-compose with pre-built image:
-
-```yaml
-services:
-  superslice:
-    image: ghcr.io/bintangtimurlangit/superslice:latest
-    container_name: superslice
-    ports:
-      - "8000:8000"
-    restart: unless-stopped
-```
-
-### Option 2: Build from Source
-
-1. Clone the repository:
-
-```bash
-git clone <repository-url>
-cd superslice
-```
-
-2. Build and run with Docker Compose:
-
-```bash
-docker-compose up -d
-```
-
-The API will be available at `http://localhost:8000`
-
-### Verify Installation
-
-Check the health endpoint:
-
-```bash
-curl http://localhost:8000/
-```
-
-Expected response:
-
-```json
-{
-  "service": "SuperSlice API",
-  "status": "running",
-  "version": "1.0.0"
-}
-```
-
-## API Usage
-
-### Get Filament Types
-
-Retrieve available filament types and their densities:
-
-```bash
-GET /filament-types
-```
-
-Response:
-
-```json
-{
-  "filament_types": {
-    "PLA": 1.24,
-    "PETG": 1.27,
-    "ABS": 1.04,
-    "TPU": 1.21,
-    "NYLON": 1.14,
-    "ASA": 1.07
-  }
-}
-```
-
-### Slice a Model
-
-Upload and slice a 3D model:
-
-```bash
-POST /slice
-```
-
-Parameters (form-data):
-
-- `file` (required): 3D model file (STL or 3MF)
-- `layer_height` (required): Layer height in mm (0.01 - 1.0)
-- `infill_density` (required): Infill percentage (0 - 100)
-- `wall_count` (required): Number of perimeter walls (1 - 20)
-- `filament_type` (optional): Filament type (default: PLA)
-- `filament_density` (optional): Custom density in g/cm³
-
-Example using curl:
+Slice a model:
 
 ```bash
 curl -X POST http://localhost:8000/slice \
   -F "file=@model.stl" \
-  -F "layer_height=0.2" \
-  -F "infill_density=20" \
-  -F "wall_count=3" \
+  -F "layer_height=0.2" -F "infill_density=20" -F "wall_count=3" \
   -F "filament_type=PLA"
 ```
-
-Response:
 
 ```json
 {
   "success": true,
-  "print_time_minutes": 45.5,
   "print_time_formatted": "45m 30s",
+  "print_time_minutes": 45.5,
   "filament_length_mm": 1234.56,
   "filament_volume_cm3": 2.98,
   "filament_weight_g": 3.69,
-  "filament_type": "PLA",
-  "layer_height": 0.2,
-  "infill_density": 20,
-  "wall_count": 3
+  "filament_type": "PLA"
 }
 ```
 
-## Configuration
+→ Full endpoints, parameters, and error codes: **[docs/API.md](docs/API.md)**.
 
-Environment variables can be configured in `.env` file or passed to Docker:
+## Documentation
 
-- `UPLOAD_DIR`: Directory for uploaded files (default: `/app/uploads`)
-- `OUTPUT_DIR`: Directory for generated G-code (default: `/app/output`)
-- `SLICE_TIMEOUT`: Maximum slicing time in seconds (default: `120`)
-- `MAX_FILE_SIZE`: Maximum upload size in bytes (default: `104857600`)
-- `CORS_ORIGINS`: Allowed CORS origins, comma-separated (default: `*`)
+| Doc | What's in it |
+| --- | --- |
+| [API.md](docs/API.md) | Endpoints, parameters, responses, filament types, errors |
+| [CONFIGURATION.md](docs/CONFIGURATION.md) | Environment variables |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Docker, Compose, cloud, reverse proxy |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How it's built and how an estimate is produced |
+| [SLICER.md](docs/SLICER.md) | Why PrusaSlicer 2.8.1 is pinned |
+| [ACCURACY.md](docs/ACCURACY.md) | How realistic the numbers are, and how to improve them |
+| [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues |
+| [ROADMAP.md](docs/ROADMAP.md) | What's planned next |
 
-Example `.env` file:
+## Local development
 
-```bash
-SLICE_TIMEOUT=180
-CORS_ORIGINS=https://example.com,https://app.example.com
-```
-
-## Development
-
-### Project Structure
-
-```
-superslice/
-├── app/                  # FastAPI application package
-│   ├── main.py           # App factory, middleware, CORS
-│   ├── routes.py         # HTTP endpoints and request helpers
-│   ├── config.py         # Configuration settings
-│   ├── models.py         # Pydantic response models
-│   └── slicer.py         # PrusaSlicer integration + G-code parsing
-├── tests/                # pytest unit + API tests
-├── docs/                 # In-depth documentation
-├── Dockerfile            # Self-owned image (fetches + extracts PrusaSlicer)
-├── docker-compose.yml
-├── requirements.txt
-├── requirements-dev.txt
-└── README.md
-```
-
-For a deeper tour, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
-[docs/SLICER.md](docs/SLICER.md), [docs/ACCURACY.md](docs/ACCURACY.md), and
-[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
-
-### Running Locally
-
-The Python app is lightweight and does not require Docker. It does require a
-PrusaSlicer binary on the host; point `PRUSASLICER_PATH` at it (on macOS this is
-inside `PrusaSlicer.app`).
-
-Run from the repository root (the app is a package, so the target is
-`app.main:app`):
+The app is a small FastAPI package; it needs a PrusaSlicer binary on the host.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 export PRUSASLICER_PATH=/path/to/prusa-slicer
 export UPLOAD_DIR=./uploads OUTPUT_DIR=./output
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload   # run from the repo root
+pytest                          # run the tests (slicer is mocked)
 ```
 
-Tip: the fastest fully-working setup is just `docker compose up --build` — it
-bundles a verified PrusaSlicer.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions and
+[RELEASING.md](RELEASING.md) for the release process.
 
-### Running Tests
+## License & attribution
 
-```bash
-pip install -r requirements-dev.txt
-pytest
-```
+SuperSlice's own code is [MIT](LICENSE) — use it freely, including commercially.
 
-The tests cover G-code parsing, time-string parsing, parameter validation, and
-the API request/response flow (PrusaSlicer is mocked, so no binary is needed).
-
-## API Documentation
-
-Interactive API documentation is available at:
-
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-
-## Error Handling
-
-The API returns standard HTTP status codes:
-
-- `200`: Success
-- `400`: Invalid request parameters, unsupported file format, or empty upload
-- `408`: Slicing timeout (model too complex)
-- `413`: Upload exceeds the maximum file size
-- `500`: Internal server error
-
-Error response format:
-
-```json
-{
-  "detail": "Error message description"
-}
-```
-
-## License & Attribution
-
-SuperSlice's own source code is licensed under the [MIT License](LICENSE) — use
-it freely, including in commercial products.
-
-### Third-party: PrusaSlicer (AGPL-3.0)
-
-SuperSlice produces estimates by invoking **PrusaSlicer** (a fork of Slic3r) as
-a separate command-line program, and bundles its **official, unmodified** Linux
-build inside the Docker image:
-
-- **Version:** 2.8.1
-- **License:** AGPL-3.0
-- **Corresponding source:** https://github.com/prusa3d/PrusaSlicer/releases/tag/version_2.8.1
-
-Calling PrusaSlicer as a separate process (rather than linking its code) keeps
-SuperSlice's own code MIT-licensed. The **distributed Docker image as a whole**
-contains AGPL-3.0 software, so if you redistribute the image you must keep this
-attribution, the AGPL license, and the pointer to corresponding source above.
-"PrusaSlicer" and "Prusa" are trademarks of Prusa Research a.s.; SuperSlice is
-not affiliated with or endorsed by them.
-
-> **Note on slicer version:** PrusaSlicer 2.8.1 is pinned deliberately — it is
-> the last release distributed as a Linux AppImage (2.9+ is Flatpak-only), and
-> it runs cleanly headless in a container. See [docs/SLICER.md](docs/SLICER.md).
-
-> **Note on accuracy:** estimates currently use PrusaSlicer's built-in defaults
-> for everything except layer height, perimeters, and infill, so the numbers are
-> approximate. To make them track a specific printer/filament, load a profile —
-> see [docs/ACCURACY.md](docs/ACCURACY.md).
+It bundles an **official, unmodified** build of **PrusaSlicer 2.8.1**
+([AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.txt)), which it invokes as a
+separate program;
+[corresponding source](https://github.com/prusa3d/PrusaSlicer/releases/tag/version_2.8.1).
+The distributed image as a whole therefore contains AGPL-3.0 software — keep
+this attribution if you redistribute it. "PrusaSlicer" and "Prusa" are
+trademarks of Prusa Research a.s.; SuperSlice is not affiliated with them.
